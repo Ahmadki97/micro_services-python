@@ -1,0 +1,148 @@
+services:
+  redis:
+    container_name: micro_re
+    image: redis
+    restart: always # When ever the container fails to boot up then restart the container
+    ports:
+      - '6379:6379'
+    command: redis-server --loglevel warning
+    volumes: 
+      - ./docker_volumes/cache:/data
+    networks:
+      - elastic_n
+
+  mongo:
+    container_name: micro_mo
+    image: mongo
+    restart: always
+    ports:
+      - '27017:27017'
+    volumes:
+      - ./docker_volumes/mongo:/data/db
+    networks:
+      - elastic_n
+
+  mysql:
+    container_name: micro_sq
+    image: mysql
+    restart: always
+    environment:
+      MYSQL_USER: mysql
+      MYSQL_DATABASE: micro_auth
+      MYSQL_PASSWORD: password
+      MYSQL_ROOT_PASSWORD: password
+    ports:
+      - '3307:3306'
+    volumes:
+      - ./docker_volumes/mysql:/var/lib/mysql
+    command: --default-authentication-plugin=mysql_native_password
+    networks:
+      - elastic_n
+  
+  postgres:
+    container_name: micro_po
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_DB: usersDB
+      POSTGRES_PASSWORD: password
+    ports:
+      - '8080:8080'
+    volumes:
+      - ./docker_volumes/postgres:/var/lib/postgresql
+    networks:
+      - elastic_n
+
+  rabbit:
+    container_name: micro_ra
+    image: rabbitmq:management
+    restart: always
+    ports:
+      - '5672:5672'
+      - '15672:15672'
+    networks:
+      - elastic_n
+
+  elastic:
+    container_name: micro_elastic
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.12.2
+    # restart: always
+    environment:
+      ES_JAVA_OPTS: -Xmx1g -Xms1g  # Sets the Java Virtual Machine (JVM) options. -Xmx1g -Xms1g sets the maximum and initial heap size to 1 gigabyte, respectively.
+     # When set to "true", it locks the memory, which can help prevent swapping.
+      discovery.type: single-node # single-node indicates that Elasticsearch will run as a single-node cluster, which is useful for development or testing. and it will not search for other neabers
+      xpack.security.enabled: "false" # Setting this to "false" disables the security features provided by X-Pack.
+      xpack.security.authc.api_key.enabled: "true" # When "true", it enables the usage of API keys for authentication.
+      xpack.monitoring.collection.enabled: "true" # it enables the collection of monitoring data from the cluster.
+      xpack.security.enrollment.enabled: "true" # t allows new nodes to be enrolled to the cluster with security features.
+    deploy:
+      resources:
+        limits:
+          memory: 1G # if not applied the container wont work 
+    ports:
+      - 9200:9200
+      - 9300:9300
+    user: "1000:1000"
+    volumes:
+      - ./docker_volumes/elastic:/usr/share/elasticsearch/data
+    networks:
+      - elastic_n
+
+  kibana:
+    container_name: micro_ki
+    image: docker.elastic.co/kibana/kibana:8.12.2
+    restart: always
+    environment:
+      - ELASTIC_SEARCH_HOSTS=["http:/elastic:9200"]
+    ports:
+      - '5601:5601'
+    networks:
+     - elastic_n 
+    volumes:
+      - ./kibana.yml/:/usr/share/kibana/config/kibana.yml:ro
+    depends_on:
+     - elastic 
+  
+  users:
+    container_name: micro_user
+    volumes:
+      - ./User_Service/user_serv:/usr/src/app/
+    build: 
+      context: .
+      dockerfile: DockerFiles/users.dockerfile
+    ports:
+      - 8002:8000
+    environment:
+      - DEBUG=1 
+      - SECRET_KEY=cjLCnPANCpNCpoAWBfiacmKANOIOAIWDBncoiaWBd
+      - DB_NAME=usersDB
+      - DB_USER=postgres
+      - DB_PASSWORD=password
+      - DB_HOST=postgres
+    networks:
+      - elastic_n
+    command: python manage.py runserver 0.0.0.0:8000
+
+  notifications:
+    container_name: micro_notifications
+    volumes:
+      - ./Notification_Service:/usr/src/app/
+    build: 
+      context: .
+      dockerfile: DockerFiles/notification.dockerfile
+    ports:
+      - 8001:8000
+    environment:
+      - DEBUG=1 
+      - SECRET_KEY=cjLCnPANCpNCpoAWBfiacmKANOIOAIWDBncoiaWBd
+    networks:
+      - elastic_n
+    
+networks:
+  elastic_n:
+    name: elastic_network
+
+
+
+
