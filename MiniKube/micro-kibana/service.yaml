@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: micro-kibana
+  namespace: production
+spec:
+  type: ClusterIP
+  selector:
+    app: micro-kibana
+  ports:
+  - name: micro-kibana
+    port: 5601
+    targetPort: 5601
+    protocol: TCP

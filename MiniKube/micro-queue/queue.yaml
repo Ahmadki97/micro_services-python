@@ -1,0 +1,47 @@
+# We use Deployement with stateless aps 
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: micro-queue
+  namespace: production
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: micro-queue
+  template:
+    metadata:
+      labels:
+        app: micro-queue
+    spec:
+      containers:
+      - name: micro-queue
+        image: rabbitmq:management
+        # env:
+        # - name: RABBITMQ_DEFAULT_USER
+        #   value: admin
+        # - name: RABBITMQ_DEFAULT_PASS
+        #   value: adminpass 
+        resources:
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+          requests:
+            memory: "150Mi"
+            cpu: "100m"
+        ports:
+        - name: micro-queue
+          containerPort: 5672
+          hostPort: 5672
+          protocol: TCP
+        - name: queue-mgmt
+          containerPort: 15672
+          hostPort: 15672
+          protocol: TCP
+        volumeMounts:
+          - name: rabbittmq-local-storage
+            mountPath: /var/lib/rabbitmq
+      volumes:
+        - name: rabbittmq-local-storage
+          persistentVolumeClaim:
+            claimName: rabbitmq-pvc

@@ -1,0 +1,70 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: micro-elastic
+  namespace: production
+spec:
+  selector:
+    matchLabels:
+      app: micro-elastic
+  strategy:
+    type: Recreate
+  # minReadySeconds: 10
+  # revisionHistoryLimit: 10
+  # progressDeadlineSeconds: 15
+  template:
+    metadata:
+      labels:
+        app: micro-elastic
+    spec:
+      initContainers:
+      - name: busy-elastic
+        image: busybox
+        imagePullPolicy: IfNotPresent
+        volumeMounts:
+        - name: elastic-local-storage
+          mountPath: /usr/share/elasticsearch/data
+        command: ['sh', '-c', "chown -R 1000:1000 /usr/share/elasticsearch/data"]
+      containers:
+      - name: micro-elastic
+        image: docker.elastic.co/elasticsearch/elasticsearch:8.14.3
+        imagePullPolicy: IfNotPresent
+        resources:
+          limits:
+            memory: "2Gi"
+            cpu: "1500m"
+          requests:
+            cpu: 250m
+            memory: 2Gi
+        env:
+        - name: discovery.type
+          value: single-node
+        - name: ES_JAVA_OPTS
+          value: '-Xmx1g -Xms1g'
+        - name: bootstrap.memory_lock
+          value: 'true'
+        - name: xpack.security.enabled
+          value: 'false'
+        - name: xpack.security.http.ssl.enabled
+          value: 'false'
+        - name: xpack.security.transport.ssl.enabled
+          value: 'false'
+        - name: xpack.security.authc.api_key.enabled
+          value: 'true'
+        - name: xpack.monitoring.collection.enabled
+          value: 'true'
+        - name: xpack.security.enrollment.enabled
+          value: 'true'
+        - name: xpack.security.authc.token.enabled
+          value: 'true'
+        ports:
+        - name: micro-elastic
+          containerPort: 9200
+        volumeMounts:
+        - name: elastic-local-storage
+          mountPath: /usr/share/elasticsearchdata
+          subPath: data
+      volumes:
+      - name: elastic-local-storage
+        persistentVolumeClaim:
+          claimName: elastic-pvc

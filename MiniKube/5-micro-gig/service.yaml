@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: micro-gig
+  namespace: production
+spec:
+  type: ClusterIP
+  selector:
+    app: micro-gig
+  ports:
+  - name: micro-gig
+    port: 8004
+    targetPort: 8004
+    protocol: TCP

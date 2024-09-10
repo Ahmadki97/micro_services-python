@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: micro-mysql
+  namespace: production
+spec:
+  selector:
+    matchLabels:
+      app: micro-mysql
+  template:
+    metadata:
+      labels:
+        app: micro-mysql
+    spec: 
+      containers:
+      - name: micro-mysql
+        env:
+        - name: MYSQL_USER
+          value: mysql
+        - name: MYSQL_PASSWORD
+          value: password
+        - name : MYSQL_ROOT_PASSWORD
+          value: password
+        - name: MYSQL_DATABASE
+          value: micro_auth
+        image: mysql
+        imagePullPolicy: IfNotPresent
+        resources:
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+          requests:
+            cpu: 100m
+            memory: "150Mi"
+        ports:
+        - name: micro-mysql 
+          containerPort: 3306
+        volumeMounts:
+        - name: mysql-local-storage
+          mountPath: /var/lib/mysql
+          subPath: mysql
+        readinessProbe:
+          exec: 
+            command: 
+            - bash
+            - "-c"
+            - |
+              mysql -h127.0.0.1 -uroot -ppassword -e'SELECT 1'
+          initialDelaySeconds: 120
+          periodSeconds: 300
+          timeoutSeconds: 60
+        livenessProbe:
+          exec: 
+            command: 
+            - bash
+            - "-c"
+            - |
+              mysqladmin -u$MSYQL_USER -p$MYSQL_PASSWORD ping
+          initialDelaySeconds: 120
+          periodSeconds: 300
+          timeoutSeconds: 60
+      volumes:
+      - name: mysql-local-storage
+        persistentVolumeClaim:
+          claimName: mysql-pvc 

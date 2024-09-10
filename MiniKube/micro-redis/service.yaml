@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: micro-redis
+  namespace: production
+spec:
+  type: ClusterIP
+  selector:
+    app: micro-redis # any pode with this selector will have this service attached to it 
+  ports:
+  - port: 6379 
+    name: micro-redis
+    targetPort: 6379

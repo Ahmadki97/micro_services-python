@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: micro-mongo
+  namespace: production
+spec:
+  selector:
+    matchLabels:
+      app: micro-mongo
+  serviceName: micro-mongo
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: micro-mongo
+    spec:
+      containers:
+      - name: micro-mongo
+        image: mongo:latest
+        ports:
+        - containerPort: 27017
+          name: micro-mongo
+        volumeMounts:
+        - name: mongo-local-storage
+          mountPath: /data/db
+      volumes:
+      - name: mongo-local-storage
+        persistentVolumeClaim:
+          claimName: mongo-pvc
