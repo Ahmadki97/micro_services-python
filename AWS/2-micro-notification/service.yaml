@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: micro-notification
+  namespace: production
+spec:
+  type: ClusterIP
+  selector:
+    app: micro-notification
+  ports:
+  - name: micro-notification
+    port: 8001
+    targetPort: 8001
+    protocol: TCP
