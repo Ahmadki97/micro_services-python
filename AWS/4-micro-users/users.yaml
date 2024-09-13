@@ -1,0 +1,96 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: micro-users
+  namespace: production
+spec:
+  selector:
+    matchLabels:
+      app: micro-users
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 25% # The max number of newly created pods above my replica number
+      maxUnavailable: 25% # The maximum number of pods that could not be available of my replicas number 
+  template:
+    metadata:
+      labels:
+        app: micro-users
+    spec:
+      containers:
+      - name: micro-users
+        image: ahmadki/micro-users:stable
+        imagePullPolicy: IfNotPresent
+        resources:
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+          requests:
+            memory: "150Mi"
+            cpu: "100m"
+        ports:
+        - name: micro-users
+          containerPort: 8003
+        env:
+        - name: GATEWAY_JWT_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: backend-secrets
+              key: gateway-jwt-token
+
+        - name: JWT_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: backend-secrets
+              key: jwt-token
+
+        - name: RABBITMQ_URL
+          valueFrom:
+            secretKeyRef:
+              name: backend-secrets
+              key: rabbitmq-url
+
+        - name: MONGO_HOST
+          valueFrom:
+            secretKeyRef:
+              name: backend-secrets
+              key: mongo-host
+
+        - name: MONGO_PORT
+          valueFrom:
+            secretKeyRef:
+              name: backend-secrets
+              key: mongo-port
+
+        - name: MONGO_DATABASE
+          value: 'micro-users'
+
+        - name: CLOUD_NAME
+          valueFrom:
+            secretKeyRef:
+              name: backend-secrets
+              key: cloud-name
+
+        - name: CLOUD_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: backend-secrets
+              key: cloud-api-key
+
+        - name: CLOUD_API_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: backend-secrets
+              key: cloud-api-secret
+
+        - name: API_GATEWAY_URL
+          value: 'http://micro-gateway.production.svc.cluster.local:8000'
+
+        - name: ELASTIC_SEARCH_URL
+          valueFrom:
+            secretKeyRef:
+              name: backend-secrets
+              key: elastic-search-url
+
+        - name: PORT
+          value: "8003"
