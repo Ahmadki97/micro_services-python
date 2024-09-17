@@ -1,0 +1,40 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: micro-prometheus-ingress
+  namespace: prometheus
+  annotations:
+    alb.ingress.kubernetes.io/load-balancer-name: micro-prometheus-ingress
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/healthcheck-path: /healthy
+    alb.ingress.kubernetes.io/healthcheck-port: '9090'
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
+    alb.ingress.kubernetes.io/ssl-redirect: '443' # If the connection established by the client is HTTP then it will direct it to HTTPs
+    alb.ingress.kubernetes.io/subnets: subnet-02f2bd9cc3edaec07, subnet-030950cfba6dde270
+    alb.ingress.kubernetes.io/target-type: ip
+    # the below annotation is for external dns to choose which host to update on route53 
+    external-dns.alpha.kubernetes.io/hostname: prometheus.markettest.store
+    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:us-east-1:014498645803:certificate/d9af5d65-eecf-4a48-a9e4-4997940dcf7e
+    alb.ingress.kubernetes.io/security-groups: sg-0ecc64c8612a22183
+spec:
+  ingressClassName: alb
+  # we use defaultbackend if the routes sent to the ingress does not match the path specified in the main backend service
+  defaultBackend:
+    service:
+      name: prometheus-server # Here to specify the service name that related to pod 
+      port:
+        number: 80
+  tls:
+  - hosts:
+    - "*.markettest.store"
+  rules:
+  - host: prometheus.markettest.store # Should be mapped to ip, in our case minikube ip
+    http:
+      paths:
+      - pathType: Prefix
+        path: "/"
+        backend:
+          service:
+            name: prometheus-server
+            port: 
+              number: 80
